@@ -1,10 +1,30 @@
 # repository_s3bucket 
 
-Instead of giving all users access to your complete S3 account, this plugin makes it
-possible to give teachers and managers access to a specific S3 folder (bucket).
+## Administrator-only customization
 
-Multiple instances are supported, you only have to create a IAM user who has read access
-to your S3 root folder, but read and write permissions to your S3 bucket.
+Modified on 2026-10-23 by Evan Briskey. The original plugin copyright and GPL
+license notices are retained.
+
+Only site administrators can browse or select files, including through direct
+file-picker requests. Existing teacher or manager capability grants cannot bypass
+this restriction. New installations no longer grant repository browsing to those
+roles by default. Published files continue to use Moodle activity access checks.
+
+Install this fork in repository/s3bucket, replacing the original plugin, then visit
+Site administration > Notifications. Release v5.2.1-admin.1 requires Moodle 5.1
+or newer and declares support for Moodle 5.1–5.2. It is not a Moodle 4.5 backport.
+
+Run tests/admin_access_test.php using the site's configured PHPUnit environment.
+Verify admin visibility, teacher/manager/student/guest denial, and learner access
+to published files before deployment. This commit does not change PDF display
+headers or provide a CSV button.
+
+
+This fork restricts browsing, searching, and selecting S3 files to site administrators.
+Course users retain access to files published through Moodle activities.
+
+Multiple repository instances are supported. Configure IAM credentials that can list
+the selected bucket and read its objects. Upload and delete permissions are not required.
 
 ## Warning
 

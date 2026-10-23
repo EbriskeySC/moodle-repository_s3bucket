@@ -1,5 +1,5 @@
 @repository @repository_s3bucket
-Feature: S3 bucket global repositories should be seen by admins and teachers
+Feature: S3 bucket global repositories should be seen only by site administrators
 
   Background:
     Given the following "courses" exist:
@@ -68,29 +68,16 @@ Feature: S3 bucket global repositories should be seen by admins and teachers
     Then I should not see "Global bucket"
 
   @javascript @_file_upload
-  Scenario: A teacher can see the global s3 bucket repository in a course module
+  Scenario: A teacher cannot see the global s3 bucket repository in a course module
     Given I am on the "folderB" "folder activity editing" page logged in as teacher
     When I click on "Add..." "button" in the "Files" "form_row"
-    Then I should see "Global bucket"
-    And I follow "Global bucket"
-    And I should see "testdirectory"
-    And I should see "testfile.jpg"
-    And I follow "testfile.jpg"
-    And I click on "Select this file" "button"
-    And I should see "testfile.jpg"
-    And I click on "Save and display" "button"
-    And I should see "testfile.jpg"
+    Then I should not see "Global bucket"
 
   @javascript
-  Scenario: A teacher can not add a global s3 bucket link in a url module
+  Scenario: A teacher cannot add a global s3 bucket link in a url module
     Given I am on the "urlA" "url activity editing" page logged in as teacher
     When I click on "Choose a link..." "button"
-    Then I should see "Global bucket"
-    And I follow "Global bucket"
-    And I should see "testdirectory"
-    And I should see "testfile.jpg"
-    And I follow "testfile.jpg"
-    And I click on "Select this file" "button"
+    Then I should not see "Global bucket"
 
   Scenario: A student cannot see the global s3 bucket repository
     Given I log in as "student"

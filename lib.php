@@ -48,9 +48,28 @@ class repository_s3bucket extends repository {
     /** @var s3client s3 client object */
     private $s3client;
 
+    /**
+     * Only site administrators may browse the bucket in the file picker.
+     *
+     * @return bool
+     */
+    public function is_visible() {
+        return is_siteadmin() && parent::is_visible();
+    }
+
+    /**
+     * Protect file-picker operations, including requests made directly to the AJAX endpoint.
+     */
+    private function require_siteadmin(): void {
+        if (!is_siteadmin()) {
+            throw new \repository_exception('adminonly', 'repository_s3bucket');
+        }
+    }
+
     #[\Override]
     public function get_listing($path = '.', $page = 1) {
         global $OUTPUT;
+        $this->require_siteadmin();
         $diricon = $OUTPUT->image_url(file_folder_icon())->out();
         $bucket = $this->get_option('bucket_name');
         $place = [['name' => $bucket, 'path' => $path]];
@@ -114,6 +133,7 @@ class repository_s3bucket extends repository {
     #[\Override]
     public function search($q, $page = 1) {
         global $OUTPUT;
+        $this->require_siteadmin();
         $diricon = $OUTPUT->image_url(file_folder_icon())->out();
         $bucket = $this->get_option('bucket_name');
         $options = [
@@ -247,6 +267,7 @@ class repository_s3bucket extends repository {
 
     #[\Override]
     public function get_link($url) {
+        $this->require_siteadmin();
         $cid = $this->context->id;
         $path = pathinfo($url);
         $file = $path['basename'];
@@ -271,6 +292,7 @@ class repository_s3bucket extends repository {
 
     #[\Override]
     public function get_file($filepath, $file = '') {
+        $this->require_siteadmin();
         $path = $this->prepare_file($file);
         $s3 = $this->create_s3();
         $options = [
@@ -372,6 +394,17 @@ class repository_s3bucket extends repository {
     #[\Override]
     public function default_returntype() {
         return FILE_REFERENCE;
+    }
+
+    /**
+     * Only administrators can select new aliases; published aliases remain readable by course users.
+     *
+     * @param string $source Object key selected in the file picker
+     * @return string
+     */
+    public function get_file_reference($source) {
+        $this->require_siteadmin();
+        return parent::get_file_reference($source);
     }
 
     #[\Override]

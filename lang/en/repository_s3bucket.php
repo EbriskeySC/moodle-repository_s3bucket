@@ -24,6 +24,7 @@
  */
 
 $string['bucketname'] = 'Bucket name';
+$string['adminonly'] = 'Only site administrators can browse or select files from this repository.';
 $string['cfkey'] = 'AWS CloudFront key';
 $string['cfkey_help'] = 'The AWS CloudFront distribution key.';
 $string['cfpem'] = 'AWS CloudFront ssl file';
