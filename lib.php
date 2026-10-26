@@ -184,7 +184,7 @@ class repository_s3bucket extends repository {
     #[\Override]
     public function send_file($storedfile, $lifetime = null, $filter = 0, $forcedownload = true, ?array $options = null): void {
         $duration = get_config('s3bucket', 'duration');
-        $this->send_otherfile($storedfile->get_reference(), sprintf('+%s minutes', $duration));
+        $this->send_otherfile($storedfile->get_reference(), sprintf('+%s minutes', $duration), $forcedownload);
     }
 
     /**
@@ -192,14 +192,23 @@ class repository_s3bucket extends repository {
      *
      * @param string $reference the filereference
      * @param string $lifetime Number of seconds before the file should expire from caches
+     * @param bool $forcedownload Whether Moodle requested a download rather than an embedded display
      */
-    public function send_otherfile($reference, $lifetime): void {
+    public function send_otherfile($reference, $lifetime, $forcedownload = true): void {
         if ($reference != '') {
             $s3 = $this->create_s3();
+            // Only PDFs are displayed inline. CSVs and other files remain downloads.
+            $inlinepdf = !$forcedownload && strtolower(pathinfo($reference, PATHINFO_EXTENSION)) === 'pdf';
+            $disposition = $inlinepdf ? 'inline' : 'attachment';
             $options = [
                'Bucket' => $this->get_option('bucket_name'),
                'Key' => $reference,
-               'ResponseContentDisposition' => 'attachment', ];
+               'ResponseContentDisposition' => $disposition,
+               'ResponseCacheControl' => 'private, no-cache, max-age=0, must-revalidate', ];
+            if ($inlinepdf) {
+                // Override S3 metadata so application/octet-stream PDFs can also be embedded.
+                $options['ResponseContentType'] = 'application/pdf';
+            }
             try {
                 $result = $s3->getCommand('GetObject', $options);
                 $req = $s3->createPresignedRequest($result, $lifetime);
@@ -212,8 +221,9 @@ class repository_s3bucket extends repository {
             $headers = [];
             $headers[] = 'Cache-Control: private, must-revalidate, pre-check=0, post-check=0, max-age=0';
             $headers[] = 'Pragma: no-cache';
-            $headers[] = 'Content-Type: ' . get_mimetype_description(['filename' => $reference]);
-            $headers[] = sprintf('Content-Disposition: attachment; filename="%s"', $reference);
+            $headers[] = 'Content-Type: ' . ($inlinepdf ? 'application/pdf' : mimeinfo('type', $reference));
+            $filename = str_replace(["\r", "\n", '"', '\\'], '_', basename($reference));
+            $headers[] = sprintf('Content-Disposition: %s; filename="%s"', $disposition, $filename);
             $headers[] = 'Location: ' . $req->getUri()->__toString();
 
             foreach ($headers as $header) {
@@ -475,7 +485,7 @@ function repository_s3bucket_pluginfile($course, $cm, $context, $filearea, $args
         $itemid = array_shift($args);
         $reference = implode('/', $args);
         $repo = repository::get_repository_by_id($itemid, $context);
-        $repo->send_otherfile($reference, sprintf('+%s minutes', $duration));
+        $repo->send_otherfile($reference, sprintf('+%s minutes', $duration), $forcedownload);
     }
 
     return false;
