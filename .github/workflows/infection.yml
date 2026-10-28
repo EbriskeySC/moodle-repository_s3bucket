@@ -84,6 +84,24 @@ jobs:
           define('PHPUNIT_UTIL', true);
           require __DIR__ . '/autoload.php';
           require __DIR__ . '/../public/lib/phpunit/bootstrap.php';
+          require_once __DIR__ . '/../public/repository/lib.php';
+          PHP
+      - name: Restrict coverage to plugin runtime
+        working-directory: moodle
+        run: |
+          php <<'PHP'
+          <?php
+          $xml = new DOMDocument();
+          $xml->load('phpunit.xml');
+          $source = $xml->getElementsByTagName('source')->item(0);
+          while ($source->firstChild) {
+              $source->removeChild($source->firstChild);
+          }
+          $include = $source->appendChild($xml->createElement('include'));
+          $include->appendChild($xml->createElement('file', 'public/repository/s3bucket/lib.php'));
+          $classes = $include->appendChild($xml->createElement('directory', 'public/repository/s3bucket/classes'));
+          $classes->setAttribute('suffix', '.php');
+          $xml->save('phpunit.xml');
           PHP
       - name: Mutation tests
         working-directory: moodle/public/repository/s3bucket
