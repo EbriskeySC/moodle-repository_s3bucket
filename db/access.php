@@ -29,9 +29,6 @@ $capabilities = [
     'repository/s3bucket:view' => [
         'captype' => 'read',
         'contextlevel' => CONTEXT_MODULE,
-        'archetypes' => [
-            'editingteacher' => CAP_ALLOW,
-            'manager' => CAP_ALLOW,
-        ],
+        'archetypes' => [],
     ],
 ];

@@ -18,7 +18,7 @@ Feature: S3 bucket repository can be used in user context
       | private_files | System       | 1         | my-index        | side-post     |
     And I enable repository "s3bucket"
 
-  Scenario: A teacher can add files from the s3 bucket repository in user context
+  Scenario: A teacher cannot browse a private s3 bucket even with a legacy instance
     Given I log in as "teacher"
     And the following "repository_s3bucket > s3buckets" exist:
       | name          | bucket_name | access_key | secret_key | endpoint              | contextlevel |
@@ -26,14 +26,7 @@ Feature: S3 bucket repository can be used in user context
     And I follow "Dashboard"
     And I follow "Manage private files..."
     When I click on "Add..." "button" in the "Files" "form_row"
-    Then I should see "teacherbucket"
-    And I follow "teacherbucket"
-    And I follow "testfile.jpg"
-    And I should see "Make a copy of the file"
-    And I should not see "Link to the file directly"
-    And I click on "Select this file" "button"
-    And I should see "testfile.jpg"
-    And I click on "Save changes" "button"
+    Then I should not see "teacherbucket"
 
   Scenario: An admin does not have access to a private s3 bucket repository of a teacher
     Given I log in as "teacher"
@@ -97,22 +90,12 @@ Feature: S3 bucket repository can be used in user context
     And I follow "Manage instances"
     But I should not see "Amazon S3 bucket"
 
-  @_file_upload
-  Scenario: An manager can add files from the s3 bucket repository in user context
+  Scenario: A manager cannot browse a private s3 bucket even with a legacy instance
     Given I log in as "manager"
     And the following "repository_s3bucket > s3buckets" exist:
       | name          | bucket_name | access_key | secret_key | endpoint              | contextlevel |
       | managerbucket | testbucket  | test       | test       | http://localhost:4566 | User         |
     And I follow "Dashboard"
     And I follow "Manage private files..."
-    And I click on "Add..." "button" in the "Files" "form_row"
-    Then I should see "managerbucket"
-    And I follow "managerbucket"
-    Then I should see "testdirectory"
-    And I should see "testfile.jpg"
-    And I follow "testfile.jpg"
-    And I click on "Select this file" "button"
-    Then I should see "testfile.jpg"
-    And I click on "Save changes" "button"
-    Then I should not see "No files available" in the "Private files" "block"
-    And I should see "testfile.jpg" in the "Private files" "block"
+    When I click on "Add..." "button" in the "Files" "form_row"
+    Then I should not see "managerbucket"

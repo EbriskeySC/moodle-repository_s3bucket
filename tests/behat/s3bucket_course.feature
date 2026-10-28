@@ -28,8 +28,8 @@ Feature: S3 bucket repository is private in user context
       | coursebucket | testbucket  | test       | test       | http://localhost:4566 | Course       |
 
   @_file_upload
-  Scenario: A teacher can add files from the s3 bucket repository in module context
-    Given I am on the "folderB" "folder activity editing" page logged in as teacher
+  Scenario: An administrator can add files from the s3 bucket repository in module context
+    Given I am on the "folderB" "folder activity editing" page logged in as admin
     And I click on "Add..." "button" in the "Files" "form_row"
     And I should see "coursebucket"
     And I follow "coursebucket"
@@ -57,10 +57,10 @@ Feature: S3 bucket repository is private in user context
     And I navigate to "Repositories" in current page administration
     Then I should not see "coursebucket"
 
-  Scenario: Another teacher can see the s3 bucket repository in same course context
+  Scenario: A teacher cannot see the s3 bucket repository in the same course context
     Given I am on the "folderB" "folder activity editing" page logged in as teacher
     When I click on "Add..." "button" in the "Files" "form_row"
-    Then I should see "coursebucket"
+    Then I should not see "coursebucket"
 
   Scenario: A student cannot see a s3 course bucket
     Given the following "activity" exists:

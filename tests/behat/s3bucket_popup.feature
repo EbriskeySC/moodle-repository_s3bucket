@@ -16,14 +16,14 @@ Feature: S3 bucket behavour in popups
     And I enable repository "s3bucket"
     And the following config values are set as admin:
       | displayoptions | 0,1,2,3,4,5,6 | resource |
-    And I log in as "teacher"
+    And I log in as "admin"
     And I am on "Course 1" course homepage with editing mode on
     And the following "repository_s3bucket > s3buckets" exist:
       | name         | bucket_name | access_key | secret_key | endpoint              | contextlevel |
       | coursebucket | testbucket  | test       | test       | http://localhost:4566 | Course       |
 
   @_file_upload
-  Scenario Outline: A teacher can add files from the s3 bucket repository as a resouce
+  Scenario Outline: An administrator can add files from the s3 bucket repository as a resouce
     Given I add a "File" to section "1" using the activity chooser
     And I set the following fields to these values:
       | Name                      | ResourceA |

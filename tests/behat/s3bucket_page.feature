@@ -18,15 +18,15 @@ Feature: S3 bucket behavour in pages
       | activity | lesson           |
       | name     | Test lesson name |
     And I enable repository "s3bucket"
-    And I log in as "teacher"
+    And I log in as "admin"
     And I am on "Course 1" course homepage with editing mode on
     And the following "repository_s3bucket > s3buckets" exist:
       | name         | bucket_name | access_key | secret_key | endpoint              | contextlevel |
       | coursebucket | testbucket  | test       | test       | http://localhost:4566 | Course       |
 
   @_file_upload
-  Scenario Outline: A teacher can add files from the s3 bucket repository as a resouce
-    When I am on the "Test lesson name" "lesson activity" page logged in as teacher
+  Scenario Outline: An administrator can add files from the s3 bucket repository as a resouce
+    When I am on the "Test lesson name" "lesson activity" page logged in as admin
     And I follow "Add a question page"
     And I set the field "Select a question type" to "Multichoice"
     And I press "Add a question page"
