@@ -6,7 +6,7 @@
     },
     "mutators": {"@default": true},
     "phpUnit": {
-        "configDir": "tests",
+        "configDir": "../../..",
         "customPath": "../../../vendor/bin/phpunit"
     },
     "initialTestsPhpOptions": "-dxdebug.mode=off -dpcov.enabled=1 -dpcov.directory=.",

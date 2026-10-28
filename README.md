@@ -56,8 +56,8 @@ fixtures, so S3 integration tests do not require real AWS credentials. Browser
 scenarios run on Moodle 5.2 / PHP 8.3 / PostgreSQL. Scheduled checks reuse the
 same workflow.
 
-The Infection workflow uses the plugin's component PHPUnit configuration and
-Moodle's own PHPUnit executable. Coverage includes `lib.php`; mutation reports
+The Infection workflow uses Moodle's main PHPUnit configuration, restricted to
+this plugin's test suite, and Moodle's own PHPUnit executable. Coverage includes `lib.php`; mutation reports
 are saved as workflow artifacts. Mutation scores are diagnostic; this fork
 does not define a minimum score.
 

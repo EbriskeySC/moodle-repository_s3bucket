@@ -76,9 +76,6 @@ jobs:
         env:
           DB: ${{ matrix.database }}
           MOODLE_BRANCH: ${{ matrix.moodle-branch }}
-      - name: Build component PHPUnit configuration
-        working-directory: moodle/public
-        run: php admin/tool/phpunit/cli/util.php --buildcomponentconfigs
       - name: Moodle bootstrap for Infection
         working-directory: moodle
         run: |
@@ -90,7 +87,9 @@ jobs:
           PHP
       - name: Mutation tests
         working-directory: moodle/public/repository/s3bucket
-        run: infection --configuration=.infection.json5 --threads=2 --no-progress --show-mutations
+        run: >-
+          infection --configuration=.infection.json5 --threads=2 --no-progress --show-mutations
+          --test-framework-options="--testsuite=repository_s3bucket_testsuite"
       - name: Mutation report
         if: always()
         uses: actions/upload-artifact@v7
