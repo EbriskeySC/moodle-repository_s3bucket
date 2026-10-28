@@ -60,6 +60,7 @@ The Infection workflow uses Moodle's main PHPUnit configuration, restricted to
 this plugin's test suite, and Moodle's own PHPUnit executable. Coverage includes `lib.php`; mutation reports
 are saved as workflow artifacts. Mutation scores are diagnostic; this fork
 does not define a minimum score.
+Mutants run serially because Moodle test processes share a database and dataroot.
 
 The Package release workflow creates a Moodle installation ZIP and SHA-256
 checksum when a version tag is pushed, or for an existing tag selected manually.

@@ -101,12 +101,16 @@ jobs:
           $include->appendChild($xml->createElement('file', 'public/repository/s3bucket/lib.php'));
           $classes = $include->appendChild($xml->createElement('directory', 'public/repository/s3bucket/classes'));
           $classes->setAttribute('suffix', '.php');
+          $generator = $include->appendChild($xml->createElement('directory', 'public/repository/s3bucket/tests/generator'));
+          $generator->setAttribute('suffix', '.php');
           $xml->save('phpunit.xml');
           PHP
       - name: Mutation tests
         working-directory: moodle/public/repository/s3bucket
+        # Moodle test processes share one database and dataroot; parallel mutants race on resets.
         run: >-
-          infection --configuration=.infection.json5 --threads=2 --no-progress --show-mutations
+          infection --configuration=.infection.json5 --threads=1 --no-progress --show-mutations
+          --debug --log-verbosity=all
           --test-framework-options="--testsuite=repository_s3bucket_testsuite"
       - name: Mutation report
         if: always()
