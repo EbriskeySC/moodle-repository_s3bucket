@@ -61,6 +61,8 @@ this plugin's test suite, and Moodle's own PHPUnit executable. Coverage includes
 are saved as workflow artifacts. Mutation scores are diagnostic; this fork
 does not define a minimum score.
 Mutants run serially because Moodle test processes share a database and dataroot.
+The mutation suite excludes generator and Behat-step helper tests, whose coverage
+targets are test-support classes. The regular Tests workflow runs all plugin tests.
 
 The Package release workflow creates a Moodle installation ZIP and SHA-256
 checksum when a version tag is pushed, or for an existing tag selected manually.

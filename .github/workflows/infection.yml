@@ -101,8 +101,13 @@ jobs:
           $include->appendChild($xml->createElement('file', 'public/repository/s3bucket/lib.php'));
           $classes = $include->appendChild($xml->createElement('directory', 'public/repository/s3bucket/classes'));
           $classes->setAttribute('suffix', '.php');
-          $generator = $include->appendChild($xml->createElement('directory', 'public/repository/s3bucket/tests/generator'));
-          $generator->setAttribute('suffix', '.php');
+          foreach ($xml->getElementsByTagName('testsuite') as $suite) {
+              if ($suite->getAttribute('name') === 'repository_s3bucket_testsuite') {
+                  // These cover test-support classes outside the runtime mutation source.
+                  $suite->appendChild($xml->createElement('exclude', 'public/repository/s3bucket/tests/generator_test.php'));
+                  $suite->appendChild($xml->createElement('exclude', 'public/repository/s3bucket/tests/behatstep_test.php'));
+              }
+          }
           $xml->save('phpunit.xml');
           PHP
       - name: Mutation tests
