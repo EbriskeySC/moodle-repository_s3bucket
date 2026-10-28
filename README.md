@@ -1,104 +1,87 @@
-# repository_s3bucket
+# Amazon S3 bucket — custom Moodle repository
 
-## PDF embedding customization
+This fork of [ewallah/moodle-repository_s3bucket](https://github.com/ewallah/moodle-repository_s3bucket)
+combines administrator-only repository selection with inline PDF delivery.
+Modified by Evan Briskey in October 2026; original copyright and GPL v3-or-later
+notices are retained. See LICENSE.
 
-Modified on 2026-10-26 by Evan Briskey. Original copyright and GPL notices are
-retained. This branch changes file delivery only; repository role permissions
-remain the same as upstream.
+## Compatibility and installation
 
-PDFs can display inline when Moodle requests an embedded view. An explicit
-Force download choice still downloads the PDF. CSVs and other formats remain
-attachments. Inline PDFs receive the application/pdf MIME type even if their
-S3 metadata specifies application/octet-stream. Both the Moodle redirect and
-signed S3 response request cache revalidation.
+Component: `repository_s3bucket`. Release: `v5.2.2-fork.1`.
+Requires Moodle 5.1 or newer; declared support is Moodle 5.1–5.2.
+**This package cannot be installed on Moodle 4.5.**
 
-### Publish a PDF that follows S3 updates
+Download the installation ZIP attached to this fork's GitHub release.
+The ZIP contains a single `s3bucket/` directory. Install it at
+`repository/s3bucket` (under `public/` in Moodle 5.1+), replacing the
+existing plugin of the same component if present. Keep a backup and test on
+staging first. Visit Site administration > Notifications to apply the upgrade.
+The bundled core `repository_s3` dependency must be available.
 
-1. Add a File activity and select the PDF from the S3 bucket repository.
-2. Choose Create an alias/shortcut rather than making a copy.
-3. Set Appearance > Display to Embed, then save.
+Enable Amazon S3 bucket under Site administration > Plugins > Repositories >
+Manage repositories. Configure a repository instance with its bucket, region,
+and IAM credentials. AWS permissions to list the bucket and read its objects
+are sufficient; upload and delete permissions are unnecessary. Do not commit
+credentials or put them in the installation ZIP.
+
+Only site administrators can browse, search, or select files, including through
+direct file-picker requests. Legacy teacher or manager capability grants cannot
+bypass this restriction. Published files still use Moodle's activity permissions.
+
+## Publish an updating PDF
+
+1. Add a File activity and select a PDF from the S3 bucket repository as an administrator.
+2. Choose **Create an alias/shortcut**, rather than making a copy.
+3. Set Appearance > Display to **Embed**, then save.
 4. Replace the S3 object at exactly the same bucket and key to update the report.
-5. Refresh or reopen the Moodle activity to request the current object. An already
-   open PDF does not poll S3 or automatically reload.
+5. Refresh or reopen the activity to request the current object.
 
-For an optional companion CSV, select it as a second alias in the same File
-activity, keep the PDF as the main file, and add a Download CSV link in the
-activity description using the protected Moodle file URL with forcedownload=1.
-Alternatively, use a separate File activity with Force download. The button and
-page styling are course configuration; this plugin does not generate them.
-Never save an expiring presigned S3 URL as the course link.
+An open PDF does not poll S3 or reload automatically. PDF responses use
+`application/pdf` and request cache revalidation, including when S3 metadata
+originally says `application/octet-stream`. Explicit Force download requests
+remain downloads. Other formats, including CSV, remain attachments.
 
-### Installation and verification
+For a companion CSV, select it as a second alias in the same File activity,
+keep the PDF as the main file, and add a **Download CSV** link in the activity
+description using the protected Moodle file URL with `forcedownload=1`.
+Alternatively, use a separate File activity with Force download. Course setup
+provides the button and page styling; the plugin does not generate them.
+Never save an expiring signed S3 URL as the course link.
 
-Install this fork in repository/s3bucket, replacing the original plugin. Visit
-Site administration > Notifications to apply the version change. Release
-v5.2.1-pdf.1 requires Moodle 5.1 or newer and declares Moodle 5.1–5.2 support;
-it is not a Moodle 4.5 backport.
+## Verification and workflows
 
-Run tests/pdf_display_test.php in a configured Moodle PHPUnit environment.
-The tests cover embedded PDFs, uppercase PDF extensions, explicit PDF downloads,
-CSV downloads, signed response settings, and the File activity's display choice.
-Existing tests/localstack_test.php additionally covers delivery through LocalStack.
+The Tests workflow checks Moodle 5.1 and 5.2, PHP 8.3 and 8.4, PostgreSQL 17
+and MariaDB 11.4. It seeds a disposable LocalStack bucket with synthetic
+fixtures, so S3 integration tests do not require real AWS credentials. Browser
+scenarios run on Moodle 5.2 / PHP 8.3 / PostgreSQL. Scheduled checks reuse the
+same workflow.
 
-## Administrator-only customization
+The Infection workflow uses the plugin's component PHPUnit configuration and
+Moodle's own PHPUnit executable. Coverage includes `lib.php`; mutation reports
+are saved as workflow artifacts. Mutation scores are diagnostic; this fork
+does not define a minimum score.
 
-Modified on 2026-10-23 by Evan Briskey. The original plugin copyright and GPL
-license notices are retained.
+The Package release workflow creates a Moodle installation ZIP and SHA-256
+checksum when a version tag is pushed, or for an existing tag selected manually.
+The tag must match `$plugin->release` in `version.php`. Runtime sources and GPL
+license are included; tests, workflows, and local configuration are excluded.
+Releases are published to this GitHub fork. No Moodle.org publication occurs.
 
-Only site administrators can browse or select files, including through direct
-file-picker requests. Existing teacher or manager capability grants cannot bypass
-this restriction. New installations no longer grant repository browsing to those
-roles by default. Published files continue to use Moodle activity access checks.
+Before deployment, verify administrator file selection, denial for teacher,
+manager, student, and guest users, learner access to published activities,
+embedded PDF refresh after replacing the same S3 key, and CSV download only
+after clicking its link.
 
-Install this fork in repository/s3bucket, replacing the original plugin, then visit
-Site administration > Notifications. Release v5.2.1-admin.1 requires Moodle 5.1
-or newer and declares support for Moodle 5.1–5.2. It is not a Moodle 4.5 backport.
+## Upstream information
 
-Run tests/admin_access_test.php using the site's configured PHPUnit environment.
-Verify admin visibility, teacher/manager/student/guest denial, and learner access
-to published files before deployment. This commit does not change PDF display
-headers or provide a CSV button.
+The upstream plugin targets Moodle core Boost and Boost child themes, including
+Classic, and documents MySQL, MariaDB, and PostgreSQL support. Its documentation
+states that encrypted files or buckets are unsupported. Moodle Workplace and
+Totara have not been tested.
 
+Report issues with this customization to
+[this fork](https://github.com/EbriskeySC/moodle-repository_s3bucket/issues).
+Upstream development is at
+[ewallah/moodle-repository_s3bucket](https://github.com/ewallah/moodle-repository_s3bucket).
 
-This fork restricts browsing, searching, and selecting S3 files to site administrators.
-Course users retain access to files published through Moodle activities.
-
-Multiple repository instances are supported. Configure IAM credentials that can list
-the selected bucket and read its objects. Upload and delete permissions are not required.
-
-## Warning
-
-* This plugin is 100% open source and has NOT been tested in Moodle Workplace, Totara, or any other proprietary software system. As long as the latter do not reward plugin developers, you can use this plugin only in 100% open source environments.
-* Encrypted files or buckets are not supported.
-
-## Theme support
-
-This plugin is developed and tested on Moodle Core's Boost theme and Boost child themes, including Moodle Core's Classic theme.
-
-## Database support
-
-This plugin is developed and tested using
-
-* MYSQL
-* MariaDB
-* PostgreSQL
-
-## Plugin repositories
-
-This plugin will be published and regularly updated on [Github](https://github.com/ewallah/moodle-repository_s3bucket)
-
-## Bug and problem reports / Support requests
-
-This plugin is carefully developed and thoroughly tested, but bugs and problems can always appear.
-Please report bugs and problems on [Github](https://github.com/ewallah/moodle-repository_s3bucket/issues)
-We will do our best to solve your problems, but please note that we can't provide per-case support.
-
-## Feature proposals
-
-- Please issue feature proposals on [Github](https://github.com/ewallah/moodle-repository_s3bucket/issues)
-- Please create pull requests on [Github](https://github.com/ewallah/moodle-repository_s3bucket/pulls)
-- We are always interested to read about your feature proposals or even get a pull request from you, but please accept that we can handle your issues only as feature proposals and not as feature requests.
-
-
-[![Build Status](https://github.com/ewallah/moodle-repository_s3bucket/workflows/Tests/badge.svg)](https://github.com/ewallah/moodle-repository_s3bucket/actions)
-[![Coverage Status](https://coveralls.io/repos/github/ewallah/moodle-repository_s3bucket/badge.svg?branch=main)](https://coveralls.io/github/ewallah/moodle-repository_s3bucket?branch=main)
+[![Tests](https://github.com/EbriskeySC/moodle-repository_s3bucket/actions/workflows/main.yml/badge.svg)](https://github.com/EbriskeySC/moodle-repository_s3bucket/actions/workflows/main.yml)

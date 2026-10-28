@@ -1,0 +1,6 @@
+/dist/
+/phpunit.xml
+/phpunit.xml.dist
+/tests/phpunit.xml
+/infection*.log
+/.phpunit.cache/

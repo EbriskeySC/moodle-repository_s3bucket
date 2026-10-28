@@ -8,8 +8,11 @@
 //
 // Moodle is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 namespace repository_s3bucket;
 
@@ -74,7 +77,9 @@ final class admin_access_test extends \advanced_testcase {
         $repo->$method(...$args);
     }
 
-    /** Site administrators can see repositories and create file references. */
+    /**
+     * Site administrators can see repositories and create file references.
+     */
     public function test_admin_can_select_files(): void {
         global $USER;
         $this->resetAfterTest();
@@ -91,7 +96,9 @@ final class admin_access_test extends \advanced_testcase {
         $this->assertStringContainsString('/repository_s3bucket/s3/', $repo->get_link('current.pdf'));
     }
 
-    /** Guests cannot browse the repository. */
+    /**
+     * Guests cannot browse the repository.
+     */
     public function test_guest_cannot_browse(): void {
         $this->resetAfterTest();
         $this->setGuestUser();

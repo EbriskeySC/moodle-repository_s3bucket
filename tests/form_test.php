@@ -142,7 +142,6 @@ final class form_test extends \advanced_testcase {
      * Test instance form error.
      */
     public function test_instance_form2(): void {
-        // TODO: review tests.
         $context = \context_system::instance();
         $region = 'HTTP://localhost:4566';
         $para = ['plugin' => 's3bucket', 'typeid' => '', 'instance' => $this->repo->id, 'contextid' => $context->id];

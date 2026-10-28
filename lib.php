@@ -397,7 +397,7 @@ class repository_s3bucket extends repository {
             $errors[] = get_string('missingparam', 'error', get_string('endpoint', 'repository_s3'));
         }
 
-        // TODO: Check if the bucket exists.
+        // Validation checks configuration fields without contacting the bucket.
         return $errors;
     }
 

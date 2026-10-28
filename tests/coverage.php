@@ -38,7 +38,7 @@ return new class extends phpunit_coverage_info {
     protected $includelistfolders = ['classes', 'tests/generator'];
 
     /** @var array The list of files relative to the plugin root to whitelist in coverage generation. */
-    protected $includelistfiles = [];
+    protected $includelistfiles = ['lib.php'];
 
     /** @var array The list of folders relative to the plugin root to excludelist in coverage generation. */
     protected $excludelistfolders = ['tests', 'lang/en'];

@@ -1,138 +1,112 @@
 name: Tests
 
-on: [push, pull_request]
+on:
+  push:
+    branches: ['**']
+  pull_request:
+  workflow_dispatch:
+  schedule:
+    - cron: '5 10 9 * *'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   ci:
-    name: ci
-    runs-on: ubuntu-latest
-
-    services:
-      postgres:
-        image: ${{ matrix.database == 'pgsql' && 'postgres' || '' }}
-        env:
-          POSTGRES_USER: 'postgres'
-          POSTGRES_HOST_AUTH_METHOD: 'trust'
-        options: --health-cmd="pg_isready" --health-interval 10s --health-timeout 5s --health-retries 3
-        ports:
-          - 5432:5432
-      mariadb:
-        image: ${{ matrix.database == 'mariadb' && 'mariadb' || '' }}
-        env:
-          MYSQL_USER: 'root'
-          MYSQL_ALLOW_EMPTY_PASSWORD: "true"
-          MYSQL_CHARACTER_SET_SERVER: "utf8mb4"
-          MYSQL_COLLATION_SERVER: "utf8mb4_unicode_ci"
-        options: --health-cmd="healthcheck.sh --connect --innodb_initialized" --health-interval 10s --health-timeout 5s --health-retries 3
-        ports:
-          - 3306:3306
-
+    name: ${{ matrix.moodle-branch }} / PHP ${{ matrix.php }} / ${{ matrix.database }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
     strategy:
       fail-fast: false
       matrix:
-        moodle-branch: ['MOODLE_502_STABLE', 'MOODLE_501_STABLE', 'main']
+        moodle-branch: [MOODLE_501_STABLE, MOODLE_502_STABLE]
         php: ['8.3', '8.4']
-        database: ['mariadb', 'pgsql']
+        database: [pgsql, mariadb]
+    services:
+      postgres:
+        image: ${{ matrix.database == 'pgsql' && 'postgres:17' || '' }}
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready --health-interval 10s
+          --health-timeout 5s --health-retries 10
+      mariadb:
+        image: ${{ matrix.database == 'mariadb' && 'mariadb:11.4' || '' }}
+        env:
+          MARIADB_ALLOW_EMPTY_ROOT_PASSWORD: '1'
+        ports: ['3306:3306']
+        options: >-
+          --health-cmd "healthcheck.sh --connect --innodb_initialized"
+          --health-interval 10s --health-timeout 5s --health-retries 10
+      localstack:
+        image: localstack/localstack:4.0
+        env:
+          SERVICES: s3
+          AWS_DEFAULT_REGION: us-east-1
+        ports: ['4566:4566']
+        options: >-
+          --health-cmd "awslocal s3api list-buckets"
+          --health-interval 10s --health-timeout 5s --health-retries 20
 
     steps:
-      - name: checkout plugin
-        uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           path: this-plugin
-
-      - name: setup PHP
-        uses: shivammathur/setup-php@v2
+          persist-credentials: false
+      - uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ matrix.php }}
-          ini-values: max_input_vars=5000,  opcache.enable_cli=1, opcache.jit = disable
-          tools: composer
+          extensions: gd
+          ini-values: max_input_vars=5000, opcache.enable_cli=0
+          tools: composer${{ github.workflow == 'Infection' && ', infection:0.32.3' || '' }}
           coverage: pcov
-
-      - name: composer
+      - name: Install CI tools
         run: |
-           composer create-project -n --no-dev --prefer-dist moodlehq/moodle-plugin-ci ci
-           echo $(cd ci/bin; pwd) >> $GITHUB_PATH
-           echo $(cd ci/vendor/bin; pwd) >> $GITHUB_PATH
-           sudo locale-gen en_AU.UTF-8
-           echo "NVM_DIR=$HOME/.nvm" >> $GITHUB_ENV
-
-
-      - name: install Moodle
+          composer create-project -n --no-dev --prefer-dist moodlehq/moodle-plugin-ci ci '^4'
+          echo "$PWD/ci/bin" >> "$GITHUB_PATH"
+          echo "$PWD/ci/vendor/bin" >> "$GITHUB_PATH"
+          sudo locale-gen en_AU.UTF-8
+          echo "NVM_DIR=$HOME/.nvm" >> "$GITHUB_ENV"
+      - name: Seed S3 test fixtures
+        run: bash this-plugin/.github/scripts/seed-localstack.sh "${{ job.services.localstack.id }}"
+      - name: Install Moodle
         run: moodle-plugin-ci --ansi install --db-host=127.0.0.1 --plugin this-plugin
         env:
           DB: ${{ matrix.database }}
           MOODLE_BRANCH: ${{ matrix.moodle-branch }}
-
-      - name: phplint
-        if: ${{ !cancelled() }}
+      - name: PHP syntax
         run: moodle-plugin-ci --ansi phplint
-
-      - name: phpmd
-        if: ${{ !cancelled() }}
+      - name: Mess detector
         run: moodle-plugin-ci --ansi phpmd
-
-      - name: phpdoc
-        if: ${{ !cancelled() }}
+      - name: PHP documentation
         run: moodle-plugin-ci --ansi phpdoc
-
-      - name: codechecker
-        if: ${{ !cancelled() }}
-        run: moodle-plugin-ci --ansi codechecker
-
-      - name: validate
-        if: ${{ !cancelled() }}
+      - name: Moodle coding style
+        run: moodle-plugin-ci --ansi phpcs
+      - name: Plugin validation
         run: moodle-plugin-ci --ansi validate
-
-      - name: savepoints
-        if: ${{ !cancelled() }}
+      - name: Upgrade savepoints
         run: moodle-plugin-ci --ansi savepoints
-
-      - name: grunt
-        if: ${{ matrix.moodle-branch == 'main'}}
-        run: moodle-plugin-ci --ansi grunt
-
-      - name: mustache
-        if: ${{ !cancelled() }}
+      - name: Templates
         run: moodle-plugin-ci --ansi mustache
-
-      - name: phpunit
-        if: ${{ !cancelled() }}
-        run: moodle-plugin-ci --ansi phpunit --testdox --coverage-text --coverage-clover
-
-      - name: privacy
-        if: ${{ !cancelled() }}
-        run: vendor/bin/phpunit --colors --no-coverage --testsuite tool_dataprivacy_testsuite,tool_policy_testsuite,core_privacy_testsuite
-        working-directory: moodle
-
-      - name: coveralls
-        continue-on-error: true
-        run: moodle-plugin-ci coveralls-upload
-        env:
-          COVERALLS_REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: firefox
-        if: ${{ !cancelled() }}
-        run: moodle-plugin-ci --ansi behat
-
-      - name: faildump
-        if: ${{ failure() && steps.behat.outcome == 'failure' }}
+      - name: PHPUnit
+        run: moodle-plugin-ci --ansi phpunit --fail-on-warning --testdox --coverage-clover
+      - name: Browser scenarios
+        id: behat
+        if: matrix.moodle-branch == 'MOODLE_502_STABLE' && matrix.php == '8.3' && matrix.database == 'pgsql'
+        run: moodle-plugin-ci --ansi behat --profile chrome --auto-rerun=0
+      - name: Test diagnostics
+        if: failure()
         uses: actions/upload-artifact@v7
         with:
-          name: firefox faildump (${{ join(matrix.*, ', ') }})
-          path: ${{ github.workspace }}/moodledata/behat_dump
-          retention-days: 7
+          name: diagnostics-${{ matrix.moodle-branch }}-${{ matrix.php }}-${{ matrix.database }}
+          path: |
+            moodledata/behat_dump
+            moodle/coverage.xml
           if-no-files-found: ignore
- 
-      - name: chrome
-        if: ${{ !cancelled() }}
-        run: moodle-plugin-ci --ansi behat --profile chrome
-
-      - name: admin bookmarks
-        if: ${{ !cancelled() }}
-        run: moodle-plugin-ci --ansi behat --auto-rerun=0 --profile chrome public/blocks/admin_bookmarks
-        working-directory: moodle
-
-      - name: admin xmldb
-        if: ${{ !cancelled() }}
-        run: moodle-plugin-ci --ansi behat --auto-rerun=0 --profile chrome public/admin/tool/xmldb
-        working-directory: moodle
+          retention-days: 7

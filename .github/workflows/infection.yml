@@ -1,64 +1,101 @@
 name: Infection
 
-on: [push, pull_request]
+on:
+  push:
+    branches: ['**']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: infection-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   infection:
-    name: infection
-    runs-on: ubuntu-latest
-
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
     strategy:
-      fail-fast: false
       matrix:
-        moodle-branch: [main]
-        php: [8.3]
+        moodle-branch: [MOODLE_502_STABLE]
+        php: ['8.3']
         database: [pgsql]
+    services:
+      postgres:
+        image: ${{ matrix.database == 'pgsql' && 'postgres:17' || '' }}
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready --health-interval 10s
+          --health-timeout 5s --health-retries 10
+      mariadb:
+        image: ${{ matrix.database == 'mariadb' && 'mariadb:11.4' || '' }}
+        env:
+          MARIADB_ALLOW_EMPTY_ROOT_PASSWORD: '1'
+        ports: ['3306:3306']
+        options: >-
+          --health-cmd "healthcheck.sh --connect --innodb_initialized"
+          --health-interval 10s --health-timeout 5s --health-retries 10
+      localstack:
+        image: localstack/localstack:4.0
+        env:
+          SERVICES: s3
+          AWS_DEFAULT_REGION: us-east-1
+        ports: ['4566:4566']
+        options: >-
+          --health-cmd "awslocal s3api list-buckets"
+          --health-interval 10s --health-timeout 5s --health-retries 20
 
     steps:
-      - name: checkout plugin
-        uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           path: this-plugin
-
-      - name: setup PHP
-        uses: shivammathur/setup-php@v2
+          persist-credentials: false
+      - uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ matrix.php }}
-          ini-values: max_input_vars=5000,  opcache.enable_cli=1, opcache.jit = disable
-          tools: infection, phpunit
+          extensions: gd
+          ini-values: max_input_vars=5000, opcache.enable_cli=0
+          tools: composer${{ github.workflow == 'Infection' && ', infection:0.32.3' || '' }}
           coverage: pcov
-
-      - name: setup pgsql
-        uses: m4nu56/postgresql-action@v1
-        with:
-          postgresql version: 17
-          postgresql user: test
-          postgresql password: test
-
-      - name: composer
+      - name: Install CI tools
         run: |
-           composer create-project -n --no-dev --prefer-dist moodlehq/moodle-plugin-ci ci
-           echo $(cd ci/bin; pwd) >> $GITHUB_PATH
-           echo $(cd ci/vendor/bin; pwd) >> $GITHUB_PATH
-           sudo locale-gen en_AU.UTF-8
-
-      - name: install Moodle
-        run: moodle-plugin-ci install --db-host=127.0.0.1 --db-type=pgsql --db-user=test --db-pass=test --plugin this-plugin
+          composer create-project -n --no-dev --prefer-dist moodlehq/moodle-plugin-ci ci '^4'
+          echo "$PWD/ci/bin" >> "$GITHUB_PATH"
+          echo "$PWD/ci/vendor/bin" >> "$GITHUB_PATH"
+          sudo locale-gen en_AU.UTF-8
+          echo "NVM_DIR=$HOME/.nvm" >> "$GITHUB_ENV"
+      - name: Seed S3 test fixtures
+        run: bash this-plugin/.github/scripts/seed-localstack.sh "${{ job.services.localstack.id }}"
+      - name: Install Moodle
+        run: moodle-plugin-ci --ansi install --db-host=127.0.0.1 --plugin this-plugin
         env:
+          DB: ${{ matrix.database }}
           MOODLE_BRANCH: ${{ matrix.moodle-branch }}
-
-      - name: build component configs
+      - name: Build component PHPUnit configuration
         working-directory: moodle/public
         run: php admin/tool/phpunit/cli/util.php --buildcomponentconfigs
-
-      - name: autoload
+      - name: Moodle bootstrap for Infection
         working-directory: moodle
         run: |
-           echo '<?php' > vendor/autoloadmoodle.php
-           echo 'define("PHPUNIT_UTIL", true);' >> vendor/autoloadmoodle.php
-           echo 'require(__DIR__ . "/../public/lib/phpunit/bootstrap.php");' >> vendor/autoloadmoodle.php
-           echo 'require("autoload.php");' >> vendor/autoloadmoodle.php
-
-      - name: infection
-        run: infection -s --configuration=public/availability/condition/coursecompleted/.infection.json5
-        working-directory: moodle
+          cat > vendor/autoloadmoodle.php <<'PHP'
+          <?php
+          define('PHPUNIT_UTIL', true);
+          require __DIR__ . '/autoload.php';
+          require __DIR__ . '/../public/lib/phpunit/bootstrap.php';
+          PHP
+      - name: Mutation tests
+        working-directory: moodle/public/repository/s3bucket
+        run: infection --configuration=.infection.json5 --threads=2 --no-progress --show-mutations
+      - name: Mutation report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: infection-report
+          path: moodle/public/repository/s3bucket/infection*.log
+          if-no-files-found: ignore
+          retention-days: 7
