@@ -80,7 +80,7 @@ final class localstack_test extends advanced_testcase {
             'Cache-Control: private, must-revalidate, pre-check=0, post-check=0',
             'max-age=0',
             'Pragma: no-cache',
-            'Content-Type: Image (JPEG)',
+            'Content-Type: image/jpeg',
             'Content-Disposition: attachment;',
             'filename="testfile.jpg"',
             'Location: http://localhost:4566/testbucket/testfile.jpg',
