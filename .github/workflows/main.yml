@@ -83,7 +83,12 @@ jobs:
       - name: PHP syntax
         run: moodle-plugin-ci --ansi phplint
       - name: JavaScript
+        id: javascript
         run: moodle-plugin-ci --ansi grunt
+      - name: Capture JavaScript build differences
+        if: failure() && steps.javascript.conclusion == 'failure'
+        working-directory: moodle/public/repository/s3bucket/amd
+        run: npx grunt amd
       - name: Mess detector
         run: moodle-plugin-ci --ansi phpmd
       - name: PHP documentation
@@ -110,5 +115,6 @@ jobs:
           path: |
             moodledata/behat_dump
             moodle/coverage.xml
+            moodle/public/repository/s3bucket/amd/build
           if-no-files-found: ignore
           retention-days: 7
