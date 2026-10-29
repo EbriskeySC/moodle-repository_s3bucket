@@ -23,8 +23,8 @@
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-$string['bucketname'] = 'Bucket name';
 $string['adminonly'] = 'Only site administrators can browse or select files from this repository.';
+$string['bucketname'] = 'Bucket name';
 $string['cfkey'] = 'AWS CloudFront key';
 $string['cfkey_help'] = 'The AWS CloudFront distribution key.';
 $string['cfpem'] = 'AWS CloudFront ssl file';
@@ -36,8 +36,10 @@ $string['cookies'] = 'AWS CloudFront cookies';
 $string['cookies_help'] = 'The AWS CloudFront cookies or signed url.';
 $string['duration'] = 'Pre-Signed URL expiration time (in minutes)';
 $string['duration_help'] = 'The time after which the Pre-Signed URL should expire (in minutes).';
+$string['invalidreportlink'] = 'The resource link contains an invalid activity ID number or PDF page number.';
 $string['pluginname'] = 'Amazon S3 bucket';
 $string['pluginname_help'] = 'AWS S3 bucket repository';
 $string['privacy:metadata'] = 'The AWS S3 bucket repository plugin does not store any personal data, but can transmit files from Moodle to AWS.';
+$string['reportunavailable'] = 'This resource is unavailable or you do not have permission to view it. Please contact your teacher or site administrator.';
 $string['s3bucket:view'] = 'View AWS S3 bucket repository';
 $string['storageclass'] = 'Storage class';

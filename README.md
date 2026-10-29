@@ -1,13 +1,14 @@
 # Amazon S3 bucket — custom Moodle repository
 
 This fork of [ewallah/moodle-repository_s3bucket](https://github.com/ewallah/moodle-repository_s3bucket)
-combines administrator-only repository selection with inline PDF delivery.
+combines administrator-only repository selection, inline PDF delivery,
+page-specific PDF links, and routing by File activity ID number in one plugin.
 Modified by Evan Briskey in October 2026; original copyright and GPL v3-or-later
 notices are retained. See LICENSE.
 
 ## Compatibility and installation
 
-Component: `repository_s3bucket`. Release: `v5.2.2-fork.1`.
+Component: `repository_s3bucket`. Release: `v5.2.2-fork.2`.
 Requires Moodle 5.1 or newer; declared support is Moodle 5.1–5.2.
 **This package cannot be installed on Moodle 4.5.**
 
@@ -47,6 +48,67 @@ description using the protected Moodle file URL with `forcedownload=1`.
 Alternatively, use a separate File activity with Force download. Course setup
 provides the button and page styling; the plugin does not generate them.
 Never save an expiring signed S3 URL as the course link.
+
+## Open a specific PDF page inside Moodle
+
+For an S3 PDF alias displayed with **Embed** in a standard File activity, this
+plugin passes the requested page from the activity URL to the existing viewer.
+It adds no visible controls. Keep the same File activity; no new activity type
+or Moodle core changes are needed. Uploaded copies, other repository types,
+and CSV main files do not receive this page-link handling.
+
+Share the activity URL with a page query parameter, for example:
+
+`https://your-moodle-site/mod/resource/view.php?id=123&pdfpage=12`
+
+Moodle checks login, enrolment, and activity access before displaying the PDF.
+The query form survives login redirects. An already signed-in user can also use
+`view.php?id=123#page=12`. Page numbers refer to the PDF's physical pages,
+starting at 1; browser PDF viewers determine support for page fragments.
+
+The URL selects the requested starting page. Manual scrolling inside the
+browser's PDF viewer does not update the activity URL. The existing Download
+CSV link and the browser's own PDF controls are unaffected.
+
+Release `v5.2.2-fork.2` includes this feature; the earlier fork.1 ZIP
+predates it. Rebuild the JavaScript with Moodle's Grunt AMD task after editing
+`amd/src/pdf_navigation.js`. Install the plugin version upgrade and purge
+caches so Moodle registers the output hook and loads the new module.
+
+## Link to a File activity by ID number
+
+Multiple PDF resources can share a course. Set each **File activity's ID
+number** under **Common module settings** to a lowercase UUID. For an external
+system that identifies S3 folders by UUID, use that existing UUID. Keep the
+activity's visible name descriptive. The course ID number is not used for
+resource routing. Each UUID must identify exactly one File activity across
+the site; duplicate ID numbers are rejected.
+
+Link from your platform using:
+
+`https://your-moodle-site/repository/s3bucket/report.php?idnumber=ACTIVITY-UUID&pdfpage=12`
+
+The optional `pdfpage` parameter selects the requested physical PDF page. The
+router requires login, finds the activity by its ID number, checks course and
+activity access, then redirects to its standard File page with the requested
+page. That page and its protected file URLs retain their normal access checks.
+The main file must be an S3 bucket PDF alias displayed with **Embed**. The
+existing companion CSV link stays in the File activity description.
+
+Manage access through course enrolments and activity availability restrictions.
+Users may access several resources or only one, according to their permissions.
+The ID number identifies a File activity; it grants no access. The router does
+not create enrolments or group or cohort memberships. Missing, duplicate and
+inaccessible resources show the same unavailable message.
+
+Links created during local development using the older `client` parameter
+continue to work. Use `idnumber` for new links; it takes precedence when both
+parameters are present. Only UUID-formatted ID numbers are currently supported.
+
+This uses the existing File activity metadata: no separate mapping file,
+database table, LTI integration, or companion plugin is required. The combined
+router is included in `v5.2.2-fork.2`; the earlier fork.1 ZIP does not include
+it. `report.php` and `classes/report_router.php` implement routing.
 
 ## Verification and workflows
 

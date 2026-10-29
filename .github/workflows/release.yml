@@ -37,5 +37,5 @@ jobs:
           else
             gh release create "$RELEASE_TAG" dist/*.zip dist/*.sha256 \
               --verify-tag --title "S3 bucket $RELEASE_TAG (custom fork)" \
-              --notes "Custom repository_s3bucket for Moodle 5.1–5.2. Administrator-only file selection and inline PDF aliases. Install the repository_s3bucket ZIP asset, which contains the s3bucket folder. See README for installation and course configuration."
+              --notes "Custom repository_s3bucket for Moodle 5.1–5.2. Administrator-only file selection, inline PDF aliases, page links and routing by File activity ID number. Install the repository_s3bucket ZIP asset, which contains the s3bucket folder. See README for installation and course configuration."
           fi

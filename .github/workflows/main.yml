@@ -82,6 +82,8 @@ jobs:
           MOODLE_BRANCH: ${{ matrix.moodle-branch }}
       - name: PHP syntax
         run: moodle-plugin-ci --ansi phplint
+      - name: JavaScript
+        run: moodle-plugin-ci --ansi grunt
       - name: Mess detector
         run: moodle-plugin-ci --ansi phpmd
       - name: PHP documentation

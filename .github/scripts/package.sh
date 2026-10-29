@@ -7,6 +7,6 @@ grep -Fq "\$plugin->release = '$tag';" version.php || { echo "Tag must match ver
 mkdir -p dist
 archive="repository_s3bucket-$tag.zip"
 git archive --format=zip --prefix=s3bucket/ --output="dist/$archive" HEAD -- \
-    lib.php version.php LICENSE README.md classes db lang pix
+    lib.php report.php version.php LICENSE README.md amd classes db lang pix
 (cd dist && sha256sum "$archive" > "$archive.sha256")
 unzip -t "dist/$archive"
