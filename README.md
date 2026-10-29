@@ -74,6 +74,9 @@ Release `v5.2.2-fork.2` includes this feature; the earlier fork.1 ZIP
 predates it. Rebuild the JavaScript with Moodle's Grunt AMD task after editing
 `amd/src/pdf_navigation.js`. Install the plugin version upgrade and purge
 caches so Moodle registers the output hook and loads the new module.
+Use Moodle's required Node.js version and its locked npm dependencies
+(`npm ci` with `npm-shrinkwrap.json`) when rebuilding. Different dependency
+versions can change generated files and fail the CI freshness check.
 
 ## Link to a File activity by ID number
 
